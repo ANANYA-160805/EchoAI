@@ -16,7 +16,7 @@ function initSocketServer(httpServer) {
 
             const decoded = jwt.verify(cookies.token, process.env.JWT_SECRET);
             
-            const user = await userModel.findById(decoded.id);
+            const user = await userModel.findById(decoded.Id);
 
             socket.user = user; // Attach user info to socket object
 
@@ -28,6 +28,7 @@ function initSocketServer(httpServer) {
     });
 
     io.on('connection', (socket) => {
+        console.log('A user connected:', socket.user);
         console.log('A user connected:', socket.id);
     });
 
