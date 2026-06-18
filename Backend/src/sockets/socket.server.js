@@ -3,6 +3,7 @@ const cookie = require('cookie');
 const jwt = require('jsonwebtoken');
 const userModel = require('../models/user.model');
 const aiService = require('../services/ai.service');
+const messageModel = require('../models/message.model');
 
 function initSocketServer(httpServer) {
     const io = new Server(httpServer, {});
@@ -28,28 +29,55 @@ function initSocketServer(httpServer) {
         }
     });
 
-    io.on('connection', (socket) => {
+   io.on('connection', (socket) => {
+   socket.on("ai-message", async (messagePayload) => {
+    console.log("Received message from client:", messagePayload);
 
-        socket.on("ai-message", async (messagePayload) => {
-            console.log("Received  message from client:", messagePayload);
-/* 
-messagePayload should contain:
-{
-    content: "User's message to AI",
-    chat: "Chat ID or context"
-}
-*/
-            const response = await aiService.generateResponse(messagePayload.content);
+    
+    if (!messagePayload.content || !messagePayload.chat) {
+        socket.emit("ai-response", { error: "Invalid message payload" });
+        return;
+    }
 
-            socket.emit("ai-response", {
-                 content: response,
-                 chat: messagePayload.chat
-                 
-
-             });
+    try {
+        
+        await messageModel.create({
+            user: socket.user._id,
+            chat: messagePayload.chat,
+            content: messagePayload.content, 
+            role: "user"
         });
 
-    });
+      
+        const response = await aiService.generateResponse(messagePayload.content);  
+
+        // Validate response
+        if (!response || response.trim() === '') {
+            throw new Error('AI returned empty response');
+        }
+
+        // Create model message
+        await messageModel.create({
+            chat: messagePayload.chat,
+            content: response,
+            user: socket.user._id,
+            role: "model"
+        });
+
+        // Emit response to client
+        socket.emit("ai-response", {
+            content: response,
+            chat: messagePayload.chat
+        });
+
+    } catch (err) {
+        console.error(err);
+        socket.emit("ai-response", {
+            error: err.message || "Failed to generate response"
+        });
+    }
+});
+});
 
     
 }

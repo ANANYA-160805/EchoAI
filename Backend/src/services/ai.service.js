@@ -10,7 +10,8 @@ async function generateResponse(content) {
         contents: content
     });
 
-    return response.text;
+     return response.text();
+
 }
 
 module.exports = {
