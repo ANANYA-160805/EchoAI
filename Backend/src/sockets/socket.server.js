@@ -48,8 +48,20 @@ function initSocketServer(httpServer) {
             role: "user"
         });
 
+       const chatHistory = await messageModel.find({
+           chat: messagePayload.chat
+         }).sort({ createdAt: -1 }).limit(5).lean();
+
+// Reverse the array in JavaScript
+chatHistory.reverse(); // Get last 5 messages in chronological order
+
+        console.log("Chat history:",);
+
       
-        const response = await aiService.generateResponse(messagePayload.content);  
+        const response = await aiService.generateResponse( chatHistory.map(item => ({
+             role: item.role,
+             parts : [{ text: item.content }]
+             })));  
 
         // Validate response
         if (!response || response.trim() === '') {
