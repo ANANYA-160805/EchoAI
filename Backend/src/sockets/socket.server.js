@@ -52,10 +52,9 @@ function initSocketServer(httpServer) {
            chat: messagePayload.chat
          }).sort({ createdAt: -1 }).limit(5).lean();
 
-// Reverse the array in JavaScript
-chatHistory.reverse(); // Get last 5 messages in chronological order
+         // Reverse the array in JavaScript
+           chatHistory.reverse(); // Get last 5 messages in chronological order
 
-        console.log("Chat history:",);
 
       
         const response = await aiService.generateResponse( chatHistory.map(item => ({
