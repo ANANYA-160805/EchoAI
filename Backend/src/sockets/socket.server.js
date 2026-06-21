@@ -50,10 +50,10 @@ function initSocketServer(httpServer) {
 
        const chatHistory = await messageModel.find({
            chat: messagePayload.chat
-         }).sort({ createdAt: -1 }).limit(5).lean();
+         }).sort({ createdAt: -1 }).limit(20).lean();
 
          // Reverse the array in JavaScript
-           chatHistory.reverse(); // Get last 5 messages in chronological order
+           chatHistory.reverse(); // Get last 20 messages in chronological order
 
 
       
