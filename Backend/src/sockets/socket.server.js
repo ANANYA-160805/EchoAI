@@ -49,6 +49,17 @@ function initSocketServer(httpServer) {
             role: "user"
         });
 
+    const vector = await aiService.generateVector(messagePayload.content);
+
+
+       await createMemory({
+        vector: vector,
+        metadata: {
+            userId: socket.user._id.toString(),
+            chatId: messagePayload.chat.toString()
+        },
+        messageId: messagePayload.messageId
+    });
 
        const chatHistory = await messageModel.find({
            chat: messagePayload.chat

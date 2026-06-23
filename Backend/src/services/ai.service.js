@@ -17,13 +17,13 @@ async function generateResponse(content) {
 async function generateVector(content) {
 
    const response = await ai.models.embedContent({
-        model: 'gemini-embedding-2',
+      model: 'gemini-embedding-001',
         contents: content,
         config : {
             outputDimensionality: 768
         }
     });
-    return response.embeddings;
+     return response.embeddings[0].values;
 }
 
 module.exports = {
