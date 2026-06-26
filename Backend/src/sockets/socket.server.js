@@ -42,7 +42,7 @@ function initSocketServer(httpServer) {
 
     try {
         
-        await messageModel.create({
+        const message = await messageModel.create({
             user: socket.user._id,
             chat: messagePayload.chat,
             content: messagePayload.content, 
@@ -52,14 +52,24 @@ function initSocketServer(httpServer) {
     const vector = await aiService.generateVector(messagePayload.content);
 
 
-       await createMemory({
-        vector: vector,
-        metadata: {
-            userId: socket.user._id.toString(),
-            chatId: messagePayload.chat.toString()
-        },
-        messageId: messagePayload.messageId
-    });
+const memory = await queryMemory({
+    queryVector: vector,
+    limit: 3,
+    metadata: {}
+})
+
+
+     await createMemory({
+  vector,
+  metadata: {
+    user: socket.user._id.toString(),   
+    chat: messagePayload.chat,
+    text: messagePayload.content           
+  },
+  messageId: message._id.toString()      
+});
+
+console.log("Retrieved memory from Pinecone:", memory);
 
        const chatHistory = await messageModel.find({
            chat: messagePayload.chat
@@ -81,12 +91,24 @@ function initSocketServer(httpServer) {
         }
 
         // Create model message
-        await messageModel.create({
+        const responseMessage = await messageModel.create({
             chat: messagePayload.chat,
             content: response,
             user: socket.user._id,
             role: "model"
         });
+
+        const responseVector = await aiService.generateVector(response);
+
+       await createMemory({
+  vector: responseVector,
+  messageId: responseMessage._id.toString(),
+  metadata: {
+    user: socket.user._id.toString(),
+    chat: messagePayload.chat,
+    text: response
+  }
+});
 
         // Emit response to client
         socket.emit("ai-response", {

@@ -5,37 +5,36 @@ const { Pinecone } = require('@pinecone-database/pinecone');
 const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
 
 // Create an index for dense vectors with integrated embedding
-const echiaiIndex = pc.Index('echi-ai');
+const echiaiIndex = pc.index('echo-ai'); 
 
 async function createMemory({ vector, metadata, messageId }) {
   try {
-    await echiaiIndex.upsert([{
-          values: vector,
-          metadata,
-      id: messageId
-    
-      
-    }]);
+    await echiaiIndex.upsert({
+      records: [{
+        id: String(messageId),
+        values: vector,
+        metadata
+      }]
+    });
     console.log("✅ Memory stored in Pinecone:", messageId);
   } catch (error) {
     console.error("❌ Pinecone Upsert Error:", error.message);
   }
 }
+async function queryMemory({ queryVector, limit = 5, metadata }) {
+  try {
+    const hasFilter = metadata && Object.keys(metadata).length > 0;
 
-async function queryMemory({queryVector, limit = 5,metadata }) {
-
-
-   try {
     const data = await echiaiIndex.query({
       vector: queryVector,
-      topK: limit, // topk means pick 5 closest points
-      filter: metadata ? metadata : undefined,
+      topK: limit,
+      filter: hasFilter ? metadata : undefined,
       includeMetadata: true
-    })
+    });
     return data.matches;
   } catch (error) {
     console.error("❌ Pinecone Query Error:", error.message);
-    return []; // Return empty array on error
+    return [];
   }
 }
 
