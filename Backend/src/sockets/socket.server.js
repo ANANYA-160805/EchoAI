@@ -51,7 +51,7 @@ function initSocketServer(httpServer) {
 
     const vector = await aiService.generateVector(messagePayload.content);
 
-
+// memory retrieval
 const memory = await queryMemory({
     queryVector: vector,
     limit: 3,
@@ -99,7 +99,7 @@ console.log("Retrieved memory from Pinecone:", memory);
         });
 
         const responseVector = await aiService.generateVector(response);
-
+ // Store the model's response in Pinecone
        await createMemory({
   vector: responseVector,
   messageId: responseMessage._id.toString(),
