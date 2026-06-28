@@ -80,10 +80,12 @@ console.log("Retrieved memory from Pinecone:", memory);
 
 
       
-        const response = await aiService.generateResponse( chatHistory.map(item => ({
-             role: item.role,
-             parts : [{ text: item.content }]
-             })));  
+      const response = await aiService.generateResponse([
+  {
+    role: "user",
+    parts: [{ text: messagePayload.content }]
+  }
+]);
 
         // Validate response
         if (!response || response.trim() === '') {
@@ -112,8 +114,9 @@ console.log("Retrieved memory from Pinecone:", memory);
 
         // Emit response to client
         socket.emit("ai-response", {
-            content: response,
-            chat: messagePayload.chat
+             chat: messagePayload.chat,
+            content: response
+           
         });
 
     } catch (err) {
