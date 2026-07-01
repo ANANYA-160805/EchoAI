@@ -78,14 +78,26 @@ console.log("Retrieved memory from Pinecone:", memory);
          // Reverse the array in JavaScript
            chatHistory.reverse(); // Get last 20 messages in chronological order
 
+              const stm = chatHistory.map(item => ({
+                  role: item.role,
+                  content: item.content
+              }));
 
+              const ltm  =[
+                {
+                    role: "user",
+                    parts : [{
+                        text:`these are some of the previous messages in this chat, use them to answer the user\'s question. If you do not find any relevant information, ignore this and answer the user\'s question based on your knowledge.
+                        ${memory.map(item => item.metadata.text).join("\n")}`
+                        
+                    }]
+                }
+              ]
+
+              console.log("Long-term memory (LTM):", ...ltm);
+              console.log("Short-term memory (STM):", ...stm);
       
-      const response = await aiService.generateResponse([
-  {
-    role: "user",
-    parts: [{ text: messagePayload.content }]
-  }
-]);
+      const response = await aiService.generateResponse( ...ltm, ...stm);
 
         // Validate response
         if (!response || response.trim() === '') {
