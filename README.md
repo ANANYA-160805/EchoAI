@@ -16,3 +16,25 @@ graph TD
 
     E --> H
 ```
+
+## Data Flow
+
+```mermaid
+flowchart LR
+    U[User] --> FE[React Frontend]
+    FE --> BE[Express Backend]
+
+    BE --> AUTH[JWT Authentication]
+    AUTH --> DB[(MongoDB)]
+
+    BE --> EMB[Generate Embedding]
+    EMB --> PINE[(Pinecone)]
+
+    PINE --> AI[Gemini 2.5 Flash]
+
+    AI --> SAVE[Save Conversation]
+    SAVE --> DB
+
+    SAVE --> FE
+    FE --> U
+```
