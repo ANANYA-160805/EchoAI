@@ -7,7 +7,12 @@ const messageModel = require('../models/message.model');
 const { createMemory, queryMemory } = require('../services/vector.service');
 
 function initSocketServer(httpServer) {
-    const io = new Server(httpServer, {});
+   const io = new Server(httpServer, {
+  cors: {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  },
+});
 
     io.use(async (socket, next) => {
         const cookies = cookie.parse(socket.handshake.headers?.cookie || '');
@@ -88,41 +93,35 @@ function initSocketServer(httpServer) {
 
          // Reverse the array in JavaScript
         //    chatHistory.reverse(); // Get last 20 messages in chronological order
-
+ 
 
         const[memory , chatHistory] = await Promise.all([
             queryMemory({
-                queryVector: vector,    
-            limit: 3,
-            metadata: {
-                user : socket.user._id
-            }
-            }),
+  queryVector: vector,
+  limit: 3,
+  metadata: {
+    user: socket.user._id.toString(),
+  },
+}),
             messageModel.find({
                 chat: messagePayload.chat
               }).sort({ createdAt: -1 }).limit(20).lean().then(messages => messages.reverse())
         ]);
 
-              const stm = chatHistory.map(item => ({
-                  role: item.role,
-                  content: item.content
-              }));
+                const stmTexts = new Set(chatHistory.map(m => m.content));
+                const relevantMemoryText = memory
+                    .map(item => item.metadata.text)
+                    .filter(text => text && !stmTexts.has(text) && text !== messagePayload.content)
+                    .join("\n");
+ 
+                 const stm = chatHistory.map(item => ({
+                    role: item.role === "model" ? "model" : "user",
+                    text: item.content,
+                }));
 
-              const ltm  =[
-                {
-                    role: "user",
-                    parts : [{
-                        text:`these are some of the previous messages in this chat, use them to answer the user\'s question. If you do not find any relevant information, ignore this and answer the user\'s question based on your knowledge.
-                        ${memory.map(item => item.metadata.text).join("\n")}`
-                        
-                    }]
-                }
-              ]
-
-              console.log("Long-term memory (LTM):", ...ltm);
-              console.log("Short-term memory (STM):", ...stm);
-      
-      const response = await aiService.generateResponse( ...ltm, ...stm);
+                console.log("Retrieved LTM context:", relevantMemoryText || "(none)");
+                console.log("Short-term memory (STM):", stm);
+       const response = await aiService.generateResponse(stm, relevantMemoryText);
 
         // Validate response
         if (!response || response.trim() === '') {

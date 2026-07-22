@@ -9,3 +9,4 @@ router.post('/',authMiddleware.authUser, chatController.createChat);
 
 
 module.exports = router;
+
