@@ -38,41 +38,4 @@
                                   | Vector Store|
                                   +-------------+
 
-Data Flow 
-
-User Prompt
-      │
-      ▼
-React Frontend
-      │
-      ▼
-Socket.IO / REST API
-      │
-      ▼
-Express Backend
-      │
-      ├── Authenticate User (JWT)
-      │
-      ├── Store/Retrieve Chat (MongoDB)
-      │
-      ├── Generate Embedding
-      │         │
-      │         ▼
-      │    Pinecone Search
-      │         │
-      │         ▼
-      └── Context + Prompt
-                │
-                ▼
-         Gemini 2.5 Flash API
-                │
-                ▼
-        AI Response Generated
-                │
-                ▼
-        Save Conversation
-                │
-                ▼
-        Send Response to Client
-
                                   
