@@ -1,0 +1,168 @@
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 4px clamp(12px, 3vw, 0px);
+  animation: fadeUp 0.35s var(--ease-out);
+}
+
+.rowUser {
+  flex-direction: row-reverse;
+}
+
+.bubbleCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 78%;
+}
+
+.bubbleColUser {
+  align-items: flex-end;
+}
+
+.bubble {
+  padding: 13px 16px;
+  border-radius: var(--radius-lg);
+  font-size: 14.5px;
+  line-height: 1.65;
+  word-wrap: break-word;
+}
+
+.aiBubble {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top-left-radius: 4px;
+  color: var(--text-primary);
+  backdrop-filter: blur(10px);
+}
+
+.userBubble {
+  background: var(--gradient-brand);
+  color: #fff;
+  border-top-right-radius: 4px;
+  box-shadow: 0 4px 18px rgba(109, 94, 248, 0.25);
+}
+
+.paragraph {
+  margin: 0;
+}
+.paragraph + .paragraph {
+  margin-top: 10px;
+}
+
+.list {
+  margin: 8px 0 8px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.link {
+  color: var(--accent-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.inlineCode {
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 0.88em;
+}
+.userBubble .inlineCode {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.codeBlock {
+  margin: 10px 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  background: #0a0a12;
+}
+
+.codeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border);
+}
+
+.codeLang {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.copyBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s, color 0.15s;
+}
+.copyBtn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.pre {
+  padding: 14px 16px;
+  overflow-x: auto;
+}
+.pre code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e4e4f0;
+  white-space: pre;
+}
+
+.timestamp {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  padding: 0 4px;
+}
+
+@media (max-width: 640px) {
+  .bubbleCol {
+    max-width: 88%;
+  }
+}
+
+/* Flat variant — plain flowing answer text, no bubble/background */
+.flatWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.flatContent {
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+.flatContent .paragraph {
+  margin: 0;
+}
+.flatContent .paragraph + .paragraph {
+  margin-top: 14px;
+}
+
+.flatTimestamp {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
