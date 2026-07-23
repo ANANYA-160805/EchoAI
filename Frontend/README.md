@@ -1,55 +1,281 @@
-# Echo AI — Frontend
+# Echo AI Frontend
 
-A premium, dark-themed React frontend for the Echo AI chat app, built with Vite, React Router, and Socket.IO client.
+A modern, responsive frontend for **Echo AI**, an AI-powered chat application built with **React**, **Vite**, and **Socket.IO**. It features secure authentication, real-time AI conversations, Markdown rendering, and a sleek glassmorphism-inspired dark UI.
 
-## Stack
+---
 
-- React 19 + Vite
-- React Router v6
-- Socket.IO client
-- Axios (cookie-based auth, `withCredentials: true`)
-- `react-markdown` + `remark-gfm` for message rendering
-- Plain CSS Modules — no Tailwind
+## ✨ Features
 
-## Getting started
+- 🔐 User Authentication (Register & Login)
+- 🤖 Real-time AI chat using Socket.IO
+- 💬 Markdown support with GitHub Flavored Markdown (GFM)
+- 📱 Fully responsive design
+- 🎨 Modern glassmorphism UI with dark theme
+- ⚡ Fast development with Vite
+- 🍪 Cookie-based authentication
+- 💾 Local storage support for chat history
+- 🔒 Protected routes
+- 🔔 Toast notifications
+- 📝 Auto-resizing chat input
 
-```bash
-npm install
-npm run dev
-```
+---
 
-The app runs on `http://localhost:5173` and expects the backend at `http://localhost:3000` (see `src/services/axios.js` and `src/context/SocketContext.jsx` if that ever changes).
+## 🛠️ Tech Stack
 
-## Project structure
+- **React 19**
+- **Vite**
+- **React Router DOM**
+- **Socket.IO Client**
+- **Axios**
+- **React Markdown**
+- **Remark GFM**
+- **CSS Modules**
+
+---
+
+## 📂 Project Structure
 
 ```
 src/
-  assets/
-  components/        # Button, Input, Modal, Avatar, Loader, Toast, Sidebar,
-                      # ChatMessage, ChatInput, Navbar, ProtectedRoute
-  context/            # AuthContext, SocketContext, ChatContext, ToastContext
-  hooks/              # useAutosizeTextarea, useClickOutside, barrel exports
-  pages/              # LandingPage, LoginPage, RegisterPage, DashboardPage
-  services/           # axios instance, auth.service, chat.service
-  styles/             # global tokens (index.css), shared AuthPage styles
-  utils/              # formatDate, cx (classnames)
+│
+├── assets/                # Images, icons and static assets
+│
+├── components/            # Reusable UI Components
+│   ├── Avatar
+│   ├── Button
+│   ├── ChatInput
+│   ├── ChatMessage
+│   ├── Loader
+│   ├── Modal
+│   ├── Navbar
+│   ├── ProtectedRoute
+│   ├── Sidebar
+│   └── Toast
+│
+├── context/               # React Context Providers
+│   ├── AuthContext
+│   ├── ChatContext
+│   ├── SocketContext
+│   └── ToastContext
+│
+├── hooks/                 # Custom React Hooks
+│
+├── pages/                 # Application Pages
+│   ├── LandingPage
+│   ├── LoginPage
+│   ├── RegisterPage
+│   └── DashboardPage
+│
+├── services/              # API & Socket services
+│
+├── styles/                # Global Styles
+│
+├── utils/                 # Utility Functions
+│
+└── main.jsx
 ```
 
-## Backend contract this frontend was built against
+---
 
-- `POST /api/auth/register` — `{ fullName: { firstName, lastName }, email, password }`
-- `POST /api/auth/login` — `{ email, password }`, sets an HttpOnly `token` cookie
-- `POST /api/chats` — `{ title }`, returns the created chat
-- Socket.IO, cookie-authenticated:
-  - emit `ai-message` → `{ chat, content }`
-  - listen `ai-response` → `{ chat, content }` or `{ error }`
+## 🚀 Getting Started
 
-### A note on chat history
+### 1. Clone the repository
 
-The backend currently exposes no endpoint to **list** a user's chats or **fetch** a chat's past messages — only chat creation and the live socket exchange. So the sidebar's "Recent chats" list and each chat's message history are cached in the browser's `localStorage`, scoped per logged-in user id. They'll survive refreshes on the same browser, but not a login from a new device until the backend adds `GET /api/chats` and `GET /api/chats/:id/messages` (or similar) — at which point swap the loading logic in `ChatContext.jsx` for real fetches.
+```bash
+git clone https://github.com/ANANYA-160805/EchoAI.git
+```
 
-## Design system
+### 2. Navigate to the frontend
 
-Dark indigo/violet base (`#07070d` background) with an indigo-to-purple brand gradient, glassmorphism surfaces (blurred translucent panels), and an "echo rings" motif — concentric ripples — used in the logo, loaders, and hero background, echoing the product name.
+```bash
+cd EchoAI/frontend
+```
 
-Typography: **Space Grotesk** for display/headings, **Inter** for body text, **JetBrains Mono** for code.
+### 3. Install dependencies
+
+```bash
+npm install
+```
+
+### 4. Start development server
+
+```bash
+npm run dev
+```
+
+The application will be available at:
+
+```
+http://localhost:5173
+```
+
+---
+
+## 🔗 Backend
+
+This frontend communicates with the Echo AI backend running at:
+
+```
+http://localhost:3000
+```
+
+Make sure the backend server is running before starting the frontend.
+
+Backend API endpoints used:
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Login user |
+| POST | `/api/chats` | Create a new chat |
+
+### Socket Events
+
+#### Client → Server
+
+```
+ai-message
+```
+
+```json
+{
+  "chat": "chatId",
+  "content": "Hello AI"
+}
+```
+
+#### Server → Client
+
+```
+ai-response
+```
+
+```json
+{
+  "chat": "chatId",
+  "content": "AI Response"
+}
+```
+
+---
+
+## 💾 Chat History
+
+Currently, the backend does not provide endpoints to fetch previous chats or messages.
+
+To improve user experience, the frontend stores:
+
+- Recent chats
+- Chat messages
+
+inside **localStorage**, scoped to the logged-in user.
+
+Once backend endpoints such as:
+
+```
+GET /api/chats
+GET /api/chats/:id/messages
+```
+
+are available, the local storage implementation can be replaced with API-based persistence.
+
+---
+
+## 🎨 Design
+
+Echo AI follows a premium dark design language featuring:
+
+- Dark Indigo Background
+- Purple & Indigo Gradient Branding
+- Glassmorphism UI
+- Echo Ripple Logo
+- Responsive Layout
+- Smooth Animations
+
+### Typography
+
+- **Space Grotesk** — Headings
+- **Inter** — Body Text
+- **JetBrains Mono** — Code Blocks
+
+---
+
+## 📦 Available Scripts
+
+```bash
+npm run dev
+```
+
+Starts the development server.
+
+```bash
+npm run build
+```
+
+Creates a production build.
+
+```bash
+npm run preview
+```
+
+Preview the production build locally.
+
+---
+
+## 📸 Screenshots
+
+Add screenshots of your application here.
+
+```
+Landing Page
+
+Login
+
+Register
+
+Dashboard
+
+Chat Interface
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome.
+
+1. Fork the repository
+2. Create a feature branch
+
+```bash
+git checkout -b feature-name
+```
+
+3. Commit your changes
+
+```bash
+git commit -m "Add feature"
+```
+
+4. Push to your branch
+
+```bash
+git push origin feature-name
+```
+
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 👩‍💻 Author
+
+**Ananya Sinha**
+
+- GitHub: https://github.com/ANANYA-160805
+- LinkedIn: https://www.linkedin.com/in/ananya-sinha/
