@@ -5,26 +5,12 @@ import {
   useRef,
   useState,
 } from 'react';
-import { createChat, getChats } from '../services/chat.service';
+import { createChat, getChats, getMessages } from '../services/chat.service';
 import { useSocket } from './SocketContext';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 
 export const ChatContext = createContext(null);
-
-function messagesStorageKey(userId) {
-  return `echo_ai_messages_${userId}`;
-}
-
-function readMessagesCache(userId) {
-  if (!userId) return {};
-  try {
-    const raw = localStorage.getItem(messagesStorageKey(userId));
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
 
 let localIdCounter = 0;
 function nextLocalId() {
@@ -48,17 +34,16 @@ export function ChatProvider({ children }) {
   const [chats, setChats] = useState([]);
   const [chatsLoading, setChatsLoading] = useState(false);
   const [currentChatId, setCurrentChatId] = useState(null);
-  // Message history has no backend endpoint yet, so it's still cached
-  // per-browser in localStorage, keyed by user id.
-  const [messagesByChat, setMessagesByChat] = useState(() =>
-    readMessagesCache(user?.id)
-  );
+  const [messagesByChat, setMessagesByChat] = useState({});
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [memoryHint, setMemoryHint] = useState('');
 
   const pendingRef = useRef(false);
   const messagesRef = useRef(messagesByChat);
   messagesRef.current = messagesByChat;
+  const loadedChatsRef = useRef(new Set());
 
   // Fetch the real chat list from the backend whenever the logged-in user changes.
   useEffect(() => {
@@ -66,10 +51,9 @@ export function ChatProvider({ children }) {
       setChats([]);
       setCurrentChatId(null);
       setMessagesByChat({});
+      loadedChatsRef.current = new Set();
       return;
     }
-
-    setMessagesByChat(readMessagesCache(user.id));
 
     let cancelled = false;
     setChatsLoading(true);
@@ -96,11 +80,41 @@ export function ChatProvider({ children }) {
     };
   }, [user, showToast]);
 
-  // Persist message cache on change (chats list itself is server-backed now).
+  // Fetch a chat's message history the first time it's opened.
   useEffect(() => {
-    if (!user) return;
-    localStorage.setItem(messagesStorageKey(user.id), JSON.stringify(messagesByChat));
-  }, [messagesByChat, user]);
+    if (!currentChatId) return;
+    if (loadedChatsRef.current.has(currentChatId)) return;
+
+    let cancelled = false;
+    setMessagesLoading(true);
+    getMessages(currentChatId)
+      .then((data) => {
+        if (cancelled) return;
+        loadedChatsRef.current.add(currentChatId);
+        setMessagesByChat((prev) => ({
+          ...prev,
+          [currentChatId]: (data.messages || []).map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            createdAt: m.createdAt,
+          })),
+        }));
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const message =
+          err?.response?.data?.message || 'Could not load this chat. Please try again.';
+        showToast(message, 'error');
+      })
+      .finally(() => {
+        if (!cancelled) setMessagesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentChatId, showToast]);
 
   // Listen for AI responses
   useEffect(() => {
@@ -114,6 +128,12 @@ export function ChatProvider({ children }) {
       if (data.error) {
         showToast(data.error || 'Echo AI could not respond. Please try again.', 'error');
         return;
+      }
+
+      if (data.memoryUsed) {
+        setMemoryHint('Using remembered context');
+      } else {
+        setMemoryHint('');
       }
 
       setMessagesByChat((prev) => {
@@ -150,6 +170,7 @@ export function ChatProvider({ children }) {
       title: data.chat.title,
       lastActivity: data.chat.lastActivity || new Date().toISOString(),
     };
+    loadedChatsRef.current.add(chat.id); // brand new — nothing to fetch
     setChats((prev) => [chat, ...prev]);
     setMessagesByChat((prev) => ({ ...prev, [chat.id]: [] }));
     setCurrentChatId(chat.id);
@@ -163,7 +184,7 @@ export function ChatProvider({ children }) {
   const sendMessage = useCallback(
     (content) => {
       if (!content.trim() || !currentChatId) return;
-      if (pendingRef.current) return; // prevent duplicate in-flight requests
+      if (pendingRef.current) return;
       if (!socket || socket.disconnected) {
         showToast('Not connected to Echo AI. Reconnecting…', 'error');
         return;
@@ -226,6 +247,7 @@ export function ChatProvider({ children }) {
         createdAt: new Date().toISOString(),
       };
 
+      loadedChatsRef.current.add(chat.id);
       setChats((prev) => [chat, ...prev]);
       setMessagesByChat((prev) => ({ ...prev, [chat.id]: [userMessage] }));
       setCurrentChatId(chat.id);
@@ -251,8 +273,10 @@ export function ChatProvider({ children }) {
         currentChatId,
         currentChat,
         currentMessages,
+        messagesLoading,
         isAiTyping,
         isSending,
+        memoryHint,
         startNewChat,
         startChatWithMessage,
         selectChat,

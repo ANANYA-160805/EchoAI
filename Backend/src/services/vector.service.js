@@ -1,44 +1,72 @@
-// Import the Pinecone library
-const { Pinecone } = require('@pinecone-database/pinecone');
+const MemoryModel = require('../models/memory.model');
 
-// Initialize a Pinecone client with your API key
-const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
-
-// Create an index for dense vectors with integrated embedding
-const echiaiIndex = pc.index('echo-ai'); 
+function toObjectId(value) {
+  if (!value) return null;
+  if (typeof value === 'object' && value.toString) return value;
+  return value;
+}
 
 async function createMemory({ vector, metadata, messageId }) {
   try {
-    await echiaiIndex.upsert({
-      records: [{
-        id: String(messageId),
-        values: vector,
-        metadata
-      }]
-    });
-    console.log("✅ Memory stored in Pinecone:", messageId);
+    if (!metadata?.user) {
+      return;
+    }
+
+    const doc = {
+      user: toObjectId(metadata.user),
+      chat: metadata.chat ? toObjectId(metadata.chat) : undefined,
+      text: metadata.text || '',
+      messageId: messageId || undefined,
+      source: 'chat',
+      embedding: Array.isArray(vector) ? vector : undefined,
+    };
+
+    await MemoryModel.create(doc);
+    console.log('✅ Memory stored in MongoDB:', messageId || doc.text);
   } catch (error) {
-    console.error("❌ Pinecone Upsert Error:", error.message);
+    console.error('❌ Memory store error:', error.message);
   }
 }
+
 async function queryMemory({ queryVector, limit = 5, metadata }) {
   try {
-    const hasFilter = metadata && Object.keys(metadata).length > 0;
+    if (!metadata?.user) {
+      return [];
+    }
 
-    const data = await echiaiIndex.query({
-      vector: queryVector,
-      topK: limit,
-      filter: hasFilter ? metadata : undefined,
-      includeMetadata: true
-    });
-    return data.matches;
+    const query = {
+      user: toObjectId(metadata.user),
+    };
+
+    const memories = await MemoryModel.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    if (!Array.isArray(memories) || memories.length === 0) {
+      return [];
+    }
+
+    const scored = memories
+      .filter((memory) => memory.text)
+      .map((memory) => ({
+        metadata: {
+          text: memory.text,
+          chat: memory.chat,
+          user: memory.user,
+          messageId: memory.messageId,
+        },
+        score: 1,
+      }));
+
+    return scored;
   } catch (error) {
-    console.error("❌ Pinecone Query Error:", error.message);
+    console.error('❌ Memory query error:', error.message);
     return [];
   }
 }
 
 module.exports = {
-    createMemory,
-    queryMemory
-}
+  createMemory,
+  queryMemory,
+};

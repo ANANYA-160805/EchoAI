@@ -88,6 +88,7 @@ export default function DashboardPage() {
     currentMessages,
     isAiTyping,
     isSending,
+    memoryHint,
     startChatWithMessage,
     selectChat,
     sendMessage,
@@ -145,6 +146,7 @@ export default function DashboardPage() {
             </svg>
           </button>
           <h2 className={styles.chatHeading}>{currentChat ? currentChat.title : 'Echo AI'}</h2>
+          {memoryHint ? <span className={styles.memoryBadge}>{memoryHint}</span> : null}
           <div className={styles.topbarSpacer} />
         </header>
 

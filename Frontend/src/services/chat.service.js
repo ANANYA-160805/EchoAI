@@ -9,3 +9,8 @@ export async function getChats() {
   const { data } = await api.get('/api/chats');
   return data;
 }
+
+export async function getMessages(chatId) {
+  const { data } = await api.get(`/api/chats/messages/${chatId}`);
+  return data;
+}

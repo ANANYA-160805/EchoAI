@@ -61,112 +61,85 @@ function initSocketServer(httpServer) {
             user: socket.user._id,
             chat: messagePayload.chat,
             content: messagePayload.content,
-            role: "user",
+            role: 'user',
           }),
           aiService.generateVector(messagePayload.content),
-          
         ]);
+
         await createMemory({
-            vector,
+          vector,
+          metadata: {
+            user: socket.user._id.toString(),
+            chat: messagePayload.chat,
+            text: messagePayload.content,
+          },
+          messageId: message._id.toString(),
+        });
+
+        const [memory, chatHistory] = await Promise.all([
+          queryMemory({
+            queryVector: vector,
+            limit: 5,
             metadata: {
               user: socket.user._id.toString(),
-              chat: messagePayload.chat,
-              text: messagePayload.content,
             },
-            messageId: message._id.toString(),
-          });
-
-// memory retrieval
-// const memory = await queryMemory({
-//     queryVector: vector,
-//     limit: 3,
-//     metadata: {
-//         user : socket.user._id
-//     }
-// })
-
-
-
-//        const chatHistory = await messageModel.find({
-//            chat: messagePayload.chat
-//          }).sort({ createdAt: -1 }).limit(20).lean();
-
-         // Reverse the array in JavaScript
-        //    chatHistory.reverse(); // Get last 20 messages in chronological order
- 
-
-        const[memory , chatHistory] = await Promise.all([
-            queryMemory({
-  queryVector: vector,
-  limit: 3,
-  metadata: {
-    user: socket.user._id.toString(),
-  },
-}),
-            messageModel.find({
-                chat: messagePayload.chat
-              }).sort({ createdAt: -1 }).limit(20).lean().then(messages => messages.reverse())
+          }),
+          messageModel
+            .find({
+              chat: messagePayload.chat,
+            })
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .lean()
+            .then((messages) => messages.reverse()),
         ]);
 
-                const stmTexts = new Set(chatHistory.map(m => m.content));
-                const relevantMemoryText = memory
-                    .map(item => item.metadata.text)
-                    .filter(text => text && !stmTexts.has(text) && text !== messagePayload.content)
-                    .join("\n");
- 
-                 const stm = chatHistory.map(item => ({
-                    role: item.role === "model" ? "model" : "user",
-                    text: item.content,
-                }));
+        const stmTexts = new Set(chatHistory.map((m) => m.content));
+        const relevantMemoryText = memory
+          .map((item) => item.metadata.text)
+          .filter((text) => text && !stmTexts.has(text) && text !== messagePayload.content)
+          .join('\n');
 
-                console.log("Retrieved LTM context:", relevantMemoryText || "(none)");
-                console.log("Short-term memory (STM):", stm);
-       const response = await aiService.generateResponse(stm, relevantMemoryText);
+        const stm = chatHistory.map((item) => ({
+          role: item.role === 'model' ? 'model' : 'user',
+          text: item.content,
+        }));
+
+        console.log('Retrieved LTM context:', relevantMemoryText || '(none)');
+        console.log('Short-term memory (STM):', stm);
+
+        const response = await aiService.generateResponse(stm, relevantMemoryText);
 
         // Validate response
         if (!response || response.trim() === '') {
             throw new Error('AI returned empty response');
         }
 
-        // Create model message
-        // const responseMessage = await messageModel.create({
-        //     chat: messagePayload.chat,
-        //     content: response,
-        //     user: socket.user._id,
-        //     role: "model"
-        // });
-
-        // const responseVector = await aiService.generateVector(response);
- // Store the model's response in Pinecone
-
-        
-        // Emit response to client
-        socket.emit("ai-response", {
-             chat: messagePayload.chat,
-            content: response
-           
+        socket.emit('ai-response', {
+          chat: messagePayload.chat,
+          content: response,
+          memoryUsed: Boolean(relevantMemoryText),
         });
 
-          const [responseMessage, responseVector] = await Promise.all([
-            messageModel.create({
-                chat: messagePayload.chat,  
-                content: response,
-                user: socket.user._id,
-                role: "model"
-            }),
-            aiService.generateVector(response)
-          ]);
+        const [responseMessage, responseVector] = await Promise.all([
+          messageModel.create({
+            chat: messagePayload.chat,
+            content: response,
+            user: socket.user._id,
+            role: 'model',
+          }),
+          aiService.generateVector(response),
+        ]);
 
-
-       await createMemory({
-  vector: responseVector,
-  messageId: responseMessage._id.toString(),
-  metadata: {
-    user: socket.user._id.toString(),
-    chat: messagePayload.chat,
-    text: response
-  }
-});
+        await createMemory({
+          vector: responseVector,
+          messageId: responseMessage._id.toString(),
+          metadata: {
+            user: socket.user._id.toString(),
+            chat: messagePayload.chat,
+            text: response,
+          },
+        });
 
 
     } catch (err) {
