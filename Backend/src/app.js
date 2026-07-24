@@ -26,7 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
 
 // Catch-all route to serve index.html for SPA frontend
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
