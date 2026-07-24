@@ -19,7 +19,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 // Serve static assets from 'dist'
-app.use(express.static(path.join(__dirname, '../dist')));
+app.use(express.static(path.join(__dirname, '../Public')));
 
 /* Routes */
 app.use('/api/auth', authRoutes);
