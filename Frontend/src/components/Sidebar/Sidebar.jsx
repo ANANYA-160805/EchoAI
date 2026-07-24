@@ -16,7 +16,7 @@ const statusCopy = {
   error: { label: 'Connection error', tone: 'offline' },
 };
 
-export default function Sidebar({ isOpen, onClose, onNewChat, creatingChat = false }) {
+export default function Sidebar({ isOpen, onClose, onToggle, onNewChat, creatingChat = false }) {
   const { user, logout } = useAuth();
   const { chats, currentChatId, selectChat } = useChat();
   const { status } = useSocket();
@@ -52,8 +52,13 @@ export default function Sidebar({ isOpen, onClose, onNewChat, creatingChat = fal
             </span>
             Echo AI
           </div>
-          <button className={styles.closeMobile} onClick={onClose} aria-label="Close menu">
-            ✕
+          <button
+            className={styles.menuBtn}
+            onClick={onToggle ?? onClose}
+            aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+            aria-expanded={isOpen}
+          >
+            ≡
           </button>
         </div>
 

@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { SocketProvider } from './context/SocketContext';
-import { ChatProvider } from './context/ChatContext';
+import ChatProvider from './context/ChatContext';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 
 import LandingPage from './pages/LandingPage/LandingPage';

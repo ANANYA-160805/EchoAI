@@ -1,5 +1,4 @@
 import {
-  createContext,
   useCallback,
   useEffect,
   useRef,
@@ -9,8 +8,7 @@ import { createChat, getChats, getMessages } from '../services/chat.service';
 import { useSocket } from './SocketContext';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
-
-export const ChatContext = createContext(null);
+import { chatContext } from './chatContextInstance';
 
 let localIdCounter = 0;
 function nextLocalId() {
@@ -26,7 +24,7 @@ function deriveTitleFromContent(content) {
   return trimmed.length > 48 ? `${trimmed.slice(0, 48)}…` : trimmed;
 }
 
-export function ChatProvider({ children }) {
+function ChatProvider({ children }) {
   const { user } = useAuth();
   const { socket } = useSocket();
   const { showToast } = useToast();
@@ -266,7 +264,7 @@ export function ChatProvider({ children }) {
   const currentChat = chats.find((c) => c.id === currentChatId) || null;
 
   return (
-    <ChatContext.Provider
+    <chatContext.Provider
       value={{
         chats,
         chatsLoading,
@@ -284,6 +282,8 @@ export function ChatProvider({ children }) {
       }}
     >
       {children}
-    </ChatContext.Provider>
+    </chatContext.Provider>
   );
 }
+
+export default ChatProvider;

@@ -8,6 +8,7 @@ import { useChat } from '../../context/useChat';
 import { useSocket } from '../../context/SocketContext';
 import { useToast } from '../../context/ToastContext';
 import { useAutosizeTextarea } from '../../hooks/useAutosizeTextarea';
+import ThemeToggle from '../../components/ThemeToggle/ThemeToggle';
 import styles from './DashboardPage.module.css';
 
 function TypingIndicator() {
@@ -88,13 +89,15 @@ export default function DashboardPage() {
     currentMessages,
     isAiTyping,
     isSending,
-    memoryHint,
     startChatWithMessage,
     selectChat,
     sendMessage,
   } = useChat();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth > 900;
+  });
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -102,13 +105,14 @@ export default function DashboardPage() {
     scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [currentMessages, isAiTyping]);
 
-  // "+ New chat" no longer creates anything on the backend. It just clears
-  // the current selection so the home composer shows up. The chat itself
-  // (with a real, content-based title) is only created once you actually
-  // ask something — see handleAskFromHome below.
+  
   function handleNewChat() {
     selectChat(null);
     setSidebarOpen(false);
+  }
+
+  function toggleSidebar() {
+    setSidebarOpen((prev) => !prev);
   }
 
   async function handleAskFromHome(content) {
@@ -136,19 +140,26 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.layout}>
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={handleNewChat} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onToggle={toggleSidebar}
+        onNewChat={handleNewChat}
+      />
 
       <div className={styles.main}>
-        <header className={styles.topbar}>
-          <button className={styles.menuBtn} onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-          </button>
-          <h2 className={styles.chatHeading}>{currentChat ? currentChat.title : 'Echo AI'}</h2>
-          {memoryHint ? <span className={styles.memoryBadge}>{memoryHint}</span> : null}
-          <div className={styles.topbarSpacer} />
-        </header>
+        {!sidebarOpen && (
+          <div className={styles.collapsedBrand}>
+            <button className={styles.floatingMenuBtn} onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
+              ≡
+            </button>
+            <span className={styles.brandLabel}>Echo AI</span>
+          </div>
+        )}
+
+        <div className={styles.mainActions}>
+          <ThemeToggle />
+        </div>
 
         {!currentChatId ? (
           <div className={styles.home}>

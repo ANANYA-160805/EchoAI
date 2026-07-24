@@ -1,7 +1,7 @@
 .layout {
   display: flex;
   height: 100vh;
-  background: var(--bg);
+  background: transparent;
 }
 
 .main {
@@ -12,50 +12,58 @@
   position: relative;
 }
 
-.topbar {
-  display: none;
+.mainActions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(7, 7, 13, 0.7);
+}
+
+.collapsedBrand {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
   backdrop-filter: blur(10px);
 }
 
-.menuBtn {
-  background: var(--surface);
+.floatingMenuBtn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   border: 1px solid var(--border);
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+.floatingMenuBtn:hover {
+  transform: translateY(-1px);
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
-.chatHeading {
+.brandLabel {
   font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.topbarSpacer {
-  width: 36px;
-}
-
-.memoryBadge {
-  margin-left: auto;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(109, 94, 248, 0.14);
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  border: 1px solid rgba(109, 94, 248, 0.24);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 /* ---------- Home / empty state (Perplexity-style search box) ---------- */
@@ -66,8 +74,8 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 40px 20px;
-  gap: 22px;
+  padding: 40px 24px 56px;
+  gap: 24px;
 }
 
 .homeRing {
@@ -103,27 +111,34 @@
 
 .homeTitle {
   font-family: var(--font-display);
-  font-size: clamp(22px, 3.6vw, 30px);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  max-width: 560px;
-  line-height: 1.3;
+  font-size: clamp(24px, 3.8vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  max-width: 620px;
+  line-height: 1.2;
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .homeComposer {
   width: 100%;
-  max-width: 640px;
+  max-width: 700px;
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  background: var(--surface);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-full);
-  padding: 8px 8px 8px 24px;
+  padding: 10px 10px 10px 24px;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: var(--shadow-md);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.homeComposer:hover {
+  transform: translateY(-1px);
 }
 .homeComposer:focus-within {
   border-color: rgba(109, 94, 248, 0.55);
@@ -211,7 +226,7 @@
 .thread {
   flex: 1;
   overflow-y: auto;
-  padding: 8px clamp(16px, 4vw, 40px) 12px;
+  padding: 16px clamp(16px, 4vw, 40px) 14px;
 }
 
 .threadInner {
@@ -222,7 +237,7 @@
 }
 
 .turn {
-  padding: 18px 0 0;
+  padding: 14px 0 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -235,29 +250,33 @@
 
 .queryBubble {
   max-width: 80%;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  border-top-right-radius: 4px;
-  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(109, 94, 248, 0.16), rgba(194, 100, 247, 0.12));
+  border: 1px solid rgba(109, 94, 248, 0.22);
+  border-radius: 18px 18px 6px 18px;
+  padding: 13px 16px;
   font-size: 15px;
   line-height: 1.6;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-wrap: break-word;
+  box-shadow: var(--shadow-sm);
 }
 
 .answerRow {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  padding: 2px 0;
 }
 
 .typingDots {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 10px 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 .typingDots span {
   width: 6px;
@@ -274,10 +293,63 @@
 }
 
 @media (max-width: 900px) {
-  .topbar {
-    display: flex;
-  }
   .home {
-    padding-top: 20px;
+    padding: 24px 18px 36px;
+  }
+
+  .homeComposer {
+    padding: 8px 8px 8px 18px;
+  }
+
+  .thread {
+    padding: 12px 14px 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .mainActions {
+    top: 12px;
+    right: 12px;
+  }
+
+  .collapsedBrand {
+    top: 12px;
+    left: 12px;
+  }
+
+  .chatHeading {
+    font-size: 14px;
+    max-width: 140px;
+  }
+
+  .homeTitle {
+    font-size: clamp(20px, 6vw, 24px);
+    max-width: 100%;
+  }
+
+  .homeComposer {
+    gap: 8px;
+    border-radius: 20px;
+    padding: 8px 8px 8px 16px;
+  }
+
+  .homeComposer textarea {
+    font-size: 14px;
+    padding: 8px 0;
+  }
+
+  .homeComposerSend {
+    width: 38px;
+    height: 38px;
+  }
+
+  .queryBubble {
+    max-width: 92%;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  .answerRow {
+    gap: 10px;
   }
 }

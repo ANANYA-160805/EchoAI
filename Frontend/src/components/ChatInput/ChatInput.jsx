@@ -24,14 +24,18 @@ export default function ChatInput({ onSend, disabled, connected = true }) {
     <div className={styles.wrap}>
       <div className={cx(styles.box, disabled && styles.boxDisabled)}>
         <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={connected ? 'Message Echo AI…' : 'Reconnecting to Echo AI…'}
-          rows={1}
-          disabled={!connected}
-        />
+  ref={textareaRef}
+  value={value}
+  onChange={(e) => setValue(e.target.value)}
+  onKeyDown={handleKeyDown}
+  placeholder={connected ? 'Message Echo AI…' : 'Reconnecting to Echo AI…'}
+  rows={1}
+  disabled={!connected}
+  spellCheck={false}
+  autoCorrect="off"
+  autoCapitalize="off"
+  autoComplete="off"
+/>
         <button
           className={styles.sendBtn}
           onClick={handleSubmit}
