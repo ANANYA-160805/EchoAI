@@ -5,15 +5,25 @@ import {
   useRef,
   useState,
 } from 'react';
-import { createChat } from '../services/chat.service';
+import { createChat, getChats } from '../services/chat.service';
 import { useSocket } from './SocketContext';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 
 export const ChatContext = createContext(null);
 
-function storageKey(userId) {
-  return `echo_ai_chats_${userId}`;
+function messagesStorageKey(userId) {
+  return `echo_ai_messages_${userId}`;
+}
+
+function readMessagesCache(userId) {
+  if (!userId) return {};
+  try {
+    const raw = localStorage.getItem(messagesStorageKey(userId));
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
 }
 
 let localIdCounter = 0;
@@ -22,52 +32,75 @@ function nextLocalId() {
   return `local-${Date.now()}-${localIdCounter}`;
 }
 
+const GENERIC_TITLE_RE = /^New chat( \d+)?$/;
+
+function deriveTitleFromContent(content) {
+  const trimmed = content.trim().replace(/\s+/g, ' ');
+  if (!trimmed) return null;
+  return trimmed.length > 48 ? `${trimmed.slice(0, 48)}…` : trimmed;
+}
+
 export function ChatProvider({ children }) {
   const { user } = useAuth();
   const { socket } = useSocket();
   const { showToast } = useToast();
 
   const [chats, setChats] = useState([]);
+  const [chatsLoading, setChatsLoading] = useState(false);
   const [currentChatId, setCurrentChatId] = useState(null);
-  const [messagesByChat, setMessagesByChat] = useState({});
+  // Message history has no backend endpoint yet, so it's still cached
+  // per-browser in localStorage, keyed by user id.
+  const [messagesByChat, setMessagesByChat] = useState(() =>
+    readMessagesCache(user?.id)
+  );
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
   const pendingRef = useRef(false);
-  const hasLoadedRef = useRef(false);
+  const messagesRef = useRef(messagesByChat);
+  messagesRef.current = messagesByChat;
 
-  // Load persisted chats/messages when the user changes
+  // Fetch the real chat list from the backend whenever the logged-in user changes.
   useEffect(() => {
     if (!user) {
       setChats([]);
       setCurrentChatId(null);
       setMessagesByChat({});
-      hasLoadedRef.current = false;
       return;
     }
-    try {
-      const raw = localStorage.getItem(storageKey(user.id));
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setChats(parsed.chats || []);
-        setMessagesByChat(parsed.messagesByChat || {});
-      }
-    } catch {
-      // ignore corrupt cache
-    } finally {
-      hasLoadedRef.current = true;
-    }
-  }, [user]);
 
-  // Persist on change — but never before the initial load has completed,
-  // otherwise the still-empty initial state overwrites the saved cache.
+    setMessagesByChat(readMessagesCache(user.id));
+
+    let cancelled = false;
+    setChatsLoading(true);
+    getChats()
+      .then((data) => {
+        if (cancelled) return;
+        const sorted = [...(data.chats || [])].sort(
+          (a, b) => new Date(b.lastActivity) - new Date(a.lastActivity)
+        );
+        setChats(sorted);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const message =
+          err?.response?.data?.message || 'Could not load your chats. Please refresh.';
+        showToast(message, 'error');
+      })
+      .finally(() => {
+        if (!cancelled) setChatsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, showToast]);
+
+  // Persist message cache on change (chats list itself is server-backed now).
   useEffect(() => {
-    if (!user || !hasLoadedRef.current) return;
-    localStorage.setItem(
-      storageKey(user.id),
-      JSON.stringify({ chats, messagesByChat })
-    );
-  }, [chats, messagesByChat, user]);
+    if (!user) return;
+    localStorage.setItem(messagesStorageKey(user.id), JSON.stringify(messagesByChat));
+  }, [messagesByChat, user]);
 
   // Listen for AI responses
   useEffect(() => {
@@ -110,21 +143,18 @@ export function ChatProvider({ children }) {
     return () => socket.off('ai-response', handleResponse);
   }, [socket, showToast]);
 
-  const startNewChat = useCallback(
-    async (title) => {
-      const data = await createChat({ title });
-      const chat = {
-        id: data.chat.id,
-        title: data.chat.title,
-        lastActivity: data.chat.lastActivity || new Date().toISOString(),
-      };
-      setChats((prev) => [chat, ...prev]);
-      setMessagesByChat((prev) => ({ ...prev, [chat.id]: [] }));
-      setCurrentChatId(chat.id);
-      return chat;
-    },
-    []
-  );
+  const startNewChat = useCallback(async (title) => {
+    const data = await createChat({ title });
+    const chat = {
+      id: data.chat.id,
+      title: data.chat.title,
+      lastActivity: data.chat.lastActivity || new Date().toISOString(),
+    };
+    setChats((prev) => [chat, ...prev]);
+    setMessagesByChat((prev) => ({ ...prev, [chat.id]: [] }));
+    setCurrentChatId(chat.id);
+    return chat;
+  }, []);
 
   const selectChat = useCallback((chatId) => {
     setCurrentChatId(chatId);
@@ -143,6 +173,8 @@ export function ChatProvider({ children }) {
       setIsSending(true);
       setIsAiTyping(true);
 
+      const isFirstMessage = (messagesRef.current[currentChatId] || []).length === 0;
+
       const userMessage = {
         id: nextLocalId(),
         role: 'user',
@@ -156,9 +188,15 @@ export function ChatProvider({ children }) {
       }));
 
       setChats((prev) =>
-        prev.map((c) =>
-          c.id === currentChatId ? { ...c, lastActivity: new Date().toISOString() } : c
-        )
+        prev.map((c) => {
+          if (c.id !== currentChatId) return c;
+          const shouldRename = isFirstMessage && GENERIC_TITLE_RE.test(c.title);
+          return {
+            ...c,
+            title: shouldRename ? deriveTitleFromContent(content) || c.title : c.title,
+            lastActivity: new Date().toISOString(),
+          };
+        })
       );
 
       socket.emit('ai-message', { chat: currentChatId, content });
@@ -209,6 +247,7 @@ export function ChatProvider({ children }) {
     <ChatContext.Provider
       value={{
         chats,
+        chatsLoading,
         currentChatId,
         currentChat,
         currentMessages,

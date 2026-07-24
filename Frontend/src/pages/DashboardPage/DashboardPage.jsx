@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import Sidebar from '../../components/Sidebar/Sidebar';
 import ChatMessage from '../../components/ChatMessage/ChatMessage';
 import ChatInput from '../../components/ChatInput/ChatInput';
-import Button from '../../components/Button/Button';
 import Avatar from '../../components/Avatar/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/useChat';
@@ -10,7 +9,7 @@ import { useSocket } from '../../context/SocketContext';
 import { useToast } from '../../context/ToastContext';
 import { useAutosizeTextarea } from '../../hooks/useAutosizeTextarea';
 import styles from './DashboardPage.module.css';
- 
+
 function TypingIndicator() {
   return (
     <div className={styles.answerRow}>
@@ -23,45 +22,30 @@ function TypingIndicator() {
     </div>
   );
 }
- 
-function generateChatTitle(existingChats, seedText) {
-  if (seedText?.trim()) {
-    const trimmed = seedText.trim().replace(/\s+/g, ' ');
-    return trimmed.length > 48 ? `${trimmed.slice(0, 48)}…` : trimmed;
-  }
-  const base = 'New chat';
-  const usedNumbers = new Set(
-    existingChats
-      .map((c) => {
-        if (c.title === base) return 1;
-        const match = c.title.match(/^New chat (\d+)$/);
-        return match ? Number(match[1]) : null;
-      })
-      .filter((n) => n !== null)
-  );
-  if (!usedNumbers.has(1)) return base;
-  let n = 2;
-  while (usedNumbers.has(n)) n += 1;
-  return `New chat ${n}`;
+
+function deriveTitleFromContent(content) {
+  const trimmed = content.trim().replace(/\s+/g, ' ');
+  if (!trimmed) return 'New chat';
+  return trimmed.length > 48 ? `${trimmed.slice(0, 48)}…` : trimmed;
 }
- 
+
 function HomeComposer({ onSubmit, disabled }) {
   const [value, setValue] = useState('');
   const textareaRef = useAutosizeTextarea(value, 160);
- 
+
   function submit() {
     if (!value.trim() || disabled) return;
     onSubmit(value.trim());
     setValue('');
   }
- 
+
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit();
     }
   }
- 
+
   return (
     <div className={styles.homeComposer}>
       <textarea
@@ -93,59 +77,51 @@ function HomeComposer({ onSubmit, disabled }) {
     </div>
   );
 }
- 
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { status } = useSocket();
   const { showToast } = useToast();
   const {
-    chats,
     currentChat,
     currentChatId,
     currentMessages,
     isAiTyping,
     isSending,
-    startNewChat,
     startChatWithMessage,
+    selectChat,
     sendMessage,
   } = useChat();
- 
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [creatingChat, setCreatingChat] = useState(false);
- 
   const scrollRef = useRef(null);
- 
+
   useEffect(() => {
     if (!scrollRef.current) return;
     scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [currentMessages, isAiTyping]);
- 
-  async function handleNewChat() {
-    if (creatingChat) return;
-    setCreatingChat(true);
-    try {
-      await startNewChat(generateChatTitle(chats));
-      setSidebarOpen(false);
-    } catch (err) {
-      const message = err?.response?.data?.message || 'Could not create chat. Please try again.';
-      showToast(message, 'error');
-    } finally {
-      setCreatingChat(false);
-    }
+
+  // "+ New chat" no longer creates anything on the backend. It just clears
+  // the current selection so the home composer shows up. The chat itself
+  // (with a real, content-based title) is only created once you actually
+  // ask something — see handleAskFromHome below.
+  function handleNewChat() {
+    selectChat(null);
+    setSidebarOpen(false);
   }
- 
+
   async function handleAskFromHome(content) {
     try {
-      await startChatWithMessage(content, generateChatTitle(chats, content));
+      await startChatWithMessage(content, deriveTitleFromContent(content));
     } catch (err) {
       const message = err?.response?.data?.message || 'Could not start a new chat. Please try again.';
       showToast(message, 'error');
     }
   }
- 
+
   const connected = status === 'connected';
- 
-  // Pair up user/model messages into Q&A turns for the Perplexity-style thread
+
+  // Pair up user/model messages into Q&A turns
   const turns = [];
   for (const m of currentMessages) {
     if (m.role === 'user') {
@@ -156,16 +132,11 @@ export default function DashboardPage() {
       turns.push({ query: null, answer: m });
     }
   }
- 
+
   return (
     <div className={styles.layout}>
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        onNewChat={handleNewChat}
-        creatingChat={creatingChat}
-      />
- 
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={handleNewChat} />
+
       <div className={styles.main}>
         <header className={styles.topbar}>
           <button className={styles.menuBtn} onClick={() => setSidebarOpen(true)} aria-label="Open menu">
@@ -176,7 +147,7 @@ export default function DashboardPage() {
           <h2 className={styles.chatHeading}>{currentChat ? currentChat.title : 'Echo AI'}</h2>
           <div className={styles.topbarSpacer} />
         </header>
- 
+
         {!currentChatId ? (
           <div className={styles.home}>
             <div className={styles.homeRing} aria-hidden="true">
@@ -188,9 +159,6 @@ export default function DashboardPage() {
               Hi {user?.fullName?.firstName || 'there'}, what are we exploring today?
             </h1>
             <HomeComposer onSubmit={handleAskFromHome} disabled={isSending} />
-            <button className={styles.homeSecondary} onClick={handleNewChat} disabled={creatingChat}>
-              or start a blank chat
-            </button>
           </div>
         ) : (
           <>
@@ -218,10 +186,9 @@ export default function DashboardPage() {
                     )}
                   </div>
                 ))}
-                {turns.length > 0 && turns[turns.length - 1].answer && isAiTyping && <TypingIndicator />}
               </div>
             </div>
- 
+
             <ChatInput onSend={sendMessage} disabled={isSending} connected={connected} />
           </>
         )}
