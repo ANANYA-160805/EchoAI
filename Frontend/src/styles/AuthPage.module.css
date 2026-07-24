@@ -114,12 +114,26 @@
 }
 
 .forgotLink {
-  font-size: 13px;
-  color: var(--primary-light);
-  font-weight: 500;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: #a855f7;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
 }
+
 .forgotLink:hover {
+  color: #c084fc;
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.forgotLink:focus-visible {
+  outline: 2px solid #a855f7;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .footerText {

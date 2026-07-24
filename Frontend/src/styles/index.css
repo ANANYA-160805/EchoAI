@@ -71,7 +71,7 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: var(--scheme);
 }
 
 body {
