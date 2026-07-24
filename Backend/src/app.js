@@ -27,7 +27,7 @@ app.use('/api/chats', chatRoutes);
 
 // Catch-all route to serve index.html for SPA frontend
 app.get("*name", (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(__dirname, '../Public/index.html'));
 });
 
 module.exports = app;
