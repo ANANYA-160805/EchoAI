@@ -116,7 +116,7 @@ http://localhost:5173
 This frontend communicates with the Echo AI backend running at:
 
 ```
-http://localhost:3000
+https://echoai-ua1s.onrender.com
 ```
 
 Make sure the backend server is running before starting the frontend.
